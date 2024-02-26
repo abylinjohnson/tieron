@@ -1,19 +1,10 @@
-'use client'
 import { useState } from 'react';
-import { useSignInEmailPassword, useAuthenticationStatus } from '@nhost/nextjs';
-import { NhostProvider } from "@nhost/nextjs";
-import { nhost } from '@/lib/nhost';
+import { useSignInEmailPassword, useAuthenticationStatus } from '@nhost/react';
+import { NhostProvider } from "@nhost/react";
+import { nhost } from '../lib/nhost';
 
-function App() {
-  return (
-    <NhostProvider nhost={nhost}>
-      <Login />
-    </NhostProvider>
-  );
-}
 
-function Login() {
-  // const { login } = useNhostAuth();
+function SignInPage() {
   const isAuthenticated = useAuthenticationStatus();
   console.log("auth status",nhost.auth.isAuthenticated())
   const {
@@ -31,7 +22,7 @@ function Login() {
     e.preventDefault();
     console.log(email, password)
     try {
-      const data = await nhost.auth.signIn({email:email, password:password})
+      const data = await signInEmailPassword(email, password)
       console.log(data)
       if(!data.isError){
         alert("Login Sccessfull")
@@ -112,4 +103,4 @@ function Login() {
   }
 }
 
-export default App
+export default SignInPage;

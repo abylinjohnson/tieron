@@ -1,4 +1,4 @@
-import { NhostClient } from "@nhost/nextjs";
+import { NhostClient } from "@nhost/react";
 
 export const nhost = new NhostClient({
   subdomain: "adcsvkemrkthjyoyaytv",
