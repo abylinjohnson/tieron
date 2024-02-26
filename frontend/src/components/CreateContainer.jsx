@@ -1,15 +1,35 @@
 import React, { useState } from 'react';
+import { useNhostClient, useFileUpload, useUserId } from '@nhost/react'
+import { nhost } from '../lib/nhost';
 
 const FormComponent = () => {
+    const userId = useUserId()
+    const nhostClient = useNhostClient()
+    const { upload } = useFileUpload()
+    const [tieronID, setTieronID] = useState('')
     const [formData, setFormData] = useState({
         tierListName: '',
         tierListDescription: '',
         category: '',
         coverImage: null,
         images: [],
-        tiers: [{ tierName: '', position: '' }]
+        tiers: []
     });
 
+    const createTierlist = `
+  mutation($name: String, $description: String, $category: String, $cover: uuid, $images: [uuid], $tiers: [String], $user_id: uuid, $status: String) {
+    insert_tierlist_one(object: {name: $name, description: $description, category: $category, cover: $cover tiers: $tiers, user_id: $user_id, status: $status}) {
+      id
+    }
+  }
+`;
+    const createImageList = `
+    mutation($tierlist_id: String, $image_id:uuid){
+        insert_tierlist_images_one(object: {tierlist_id: $tierlist_id,image_id: $image_id}){
+            tierlist_id
+        }
+    }
+    `
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
@@ -25,18 +45,12 @@ const FormComponent = () => {
 
     const handleTierNameChange = (index, value) => {
         const newTiers = [...formData.tiers];
-        newTiers[index].tierName = value;
-        setFormData({ ...formData, tiers: newTiers });
-    };
-
-    const handlePositionChange = (index, value) => {
-        const newTiers = [...formData.tiers];
-        newTiers[index].position = value;
+        newTiers[index] = value;
         setFormData({ ...formData, tiers: newTiers });
     };
 
     const handleAddTier = () => {
-        setFormData({ ...formData, tiers: [...formData.tiers, { tierName: '', position: '' }] });
+        setFormData({ ...formData, tiers: [...formData.tiers, ''] });
     };
 
     const handleDeleteTier = (index) => {
@@ -45,9 +59,55 @@ const FormComponent = () => {
         setFormData({ ...formData, tiers: newTiers });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log(formData); // You can handle form submission here
+        let sendData = {
+            name: formData.tierListName,
+            description: formData.tierListDescription,
+            category: formData.category,
+            tiers: formData.tiers,
+            user_id: userId,
+            status: "active",
+            cover: ""
+        }
+
+        try {
+            const { id, error } = await upload({
+                file: formData.coverImage,
+                name: formData.coverImage.name
+            })
+            sendData.cover = id
+        } catch (error) {
+            console.log(error)
+        }
+        console.log(formData)
+        await nhost.graphql.request(createTierlist, sendData).then( response => {
+            formData.images.map(async(e)=>{
+                let img = ''
+                try {
+                    const { id, error } = await upload({
+                        file: e,
+                        name: e.name
+                    })
+                    img = id
+                } catch (error) {
+                    console.log(error)
+                }
+                console.log(img)
+                const sendImageData = {
+                    tierlist_id: response.data.insert_tierlist_one.id,
+                    image_id: img
+                }
+                await nhost.graphql.request(createImageList, sendImageData).then(response => {
+                    console.log(response)
+                }).catch(e => {
+                    console.log(e);
+                });
+            })
+        }).catch(e => {
+            console.log(e);
+        });
+        console.log(tieronID);
     };
 
     return (
@@ -98,8 +158,7 @@ const FormComponent = () => {
                         <h3 className="font-semibold mb-2">Setup Your Tiers</h3>
                         {formData.tiers.map((tier, index) => (
                             <div key={index} className="flex items-center mb-2">
-                                <input type="text" value={tier.tierName} onChange={(e) => handleTierNameChange(index, e.target.value)} className="mr-2 px-3 py-2 border rounded-md" required />
-                                <input type="number" value={tier.position} onChange={(e) => handlePositionChange(index, e.target.value)} placeholder="Position" className="mr-2 px-3 py-2 border rounded-md" required />
+                                <input type="text" value={tier} onChange={(e) => handleTierNameChange(index, e.target.value)} className="mr-2 px-3 py-2 border rounded-md" required />
                                 <button type="button" onClick={() => handleDeleteTier(index)} className="px-3 py-1 bg-black text-white rounded-md">X</button>
                             </div>
                         ))}

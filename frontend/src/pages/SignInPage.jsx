@@ -4,6 +4,7 @@ import { NhostProvider } from "@nhost/react";
 import { nhost } from '../lib/nhost';
 
 
+
 function SignInPage() {
   const isAuthenticated = useAuthenticationStatus();
   console.log("auth status",nhost.auth.isAuthenticated())

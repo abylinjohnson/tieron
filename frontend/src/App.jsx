@@ -6,7 +6,6 @@ import './App.css'
 import { SignedIn, SignedOut } from '@nhost/react'
 import CreatePage from './pages/CreatePage'
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
     <>
