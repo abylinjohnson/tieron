@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSignOut } from '@nhost/react'; 
 const Navbar = () => {
+    const { signOut } = useSignOut()
     const navigate = useNavigate();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const navigateToCreate= () => {
@@ -26,8 +28,8 @@ const Navbar = () => {
                         <img src="https://avatars.githubusercontent.com/u/81345003?v=4" alt="Avatar" className="h-8 w-8 rounded-full" />
                     </button>
                     {isDropdownOpen && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2">
-                            <button onClick={handleLogout} className="block w-full px-4 py-2 text-gray-800 hover:bg-gray-200">
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-10">
+                            <button onClick={() => signOut()} className="block w-full px-4 py-2 text-gray-800 hover:bg-gray-200">
                                 Logout
                             </button>
                         </div>
