@@ -12,7 +12,7 @@ const FormComponent = () => {
         tierListDescription: '',
         category: '',
         coverImage: null,
-        images: [],
+        image: [],
         tiers: []
     });
 
@@ -26,7 +26,7 @@ const FormComponent = () => {
     const createImageList = `
     mutation($tierlist_id: String, $image_id:uuid){
         insert_tierlist_images_one(object: {tierlist_id: $tierlist_id,image_id: $image_id}){
-            tierlist_id
+            image_id
         }
     }
     `
@@ -40,7 +40,7 @@ const FormComponent = () => {
     };
 
     const handleImagesChange = (e) => {
-        setFormData({ ...formData, images: [...formData.images, ...e.target.files] });
+        setFormData({ ...formData, image: e.target.files[0] });
     };
 
     const handleTierNameChange = (index, value) => {
@@ -58,7 +58,25 @@ const FormComponent = () => {
         newTiers.splice(index, 1);
         setFormData({ ...formData, tiers: newTiers });
     };
-
+    const uploadImage = async (e) => {
+        e.preventDefault();
+        console.log(tieronID)
+        try {
+            const { id, error } = await upload({
+                file: formData.image,
+                name: formData.image.name
+            })
+            const sendImageData = {
+                tierlist_id: tieronID,
+                image_id: id
+            }
+            console.log(sendImageData)
+            const resp = await nhost.graphql.request(createImageList, sendImageData)
+            console.log(resp)
+        } catch (error) {
+            console.log(error)
+        }
+    }
     const handleSubmit = async (e) => {
         e.preventDefault();
         let sendData = {
@@ -70,7 +88,6 @@ const FormComponent = () => {
             status: "active",
             cover: ""
         }
-
         try {
             const { id, error } = await upload({
                 file: formData.coverImage,
@@ -80,36 +97,11 @@ const FormComponent = () => {
         } catch (error) {
             console.log(error)
         }
-        console.log(formData)
-        await nhost.graphql.request(createTierlist, sendData).then( response => {
-            formData.images.map(async(e)=>{
-                let img = ''
-                try {
-                    const { id, error } = await upload({
-                        file: e,
-                        name: e.name
-                    })
-                    img = id
-                } catch (error) {
-                    console.log(error)
-                }
-                console.log(img)
-                const sendImageData = {
-                    tierlist_id: response.data.insert_tierlist_one.id,
-                    image_id: img
-                }
-                await nhost.graphql.request(createImageList, sendImageData).then(response => {
-                    console.log(response)
-                }).catch(e => {
-                    console.log(e);
-                });
-            })
-        }).catch(e => {
-            console.log(e);
-        });
-        console.log(tieronID);
+        console.log(sendData)
+        const { data } = await nhost.graphql.request(createTierlist, sendData)
+        const tierlist_id = data.insert_tierlist_one.id
+        setTieronID(tierlist_id)
     };
-
     return (
         <>
             <br></br>
@@ -145,16 +137,6 @@ const FormComponent = () => {
                         <input id="cover-upload" type="file" accept="image/*" onChange={handleCoverImageChange} className="hidden" />
                     </div>
                     <div className="mb-4">
-                        <h3 className="font-semibold mb-2">Upload Images</h3>
-                        <label htmlFor="images-upload" className="cursor-pointer">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                            Images
-                        </label>
-                        <input id="images-upload" type="file" accept="image/*" multiple onChange={handleImagesChange} className="hidden" />
-                    </div>
-                    <div className="mb-4">
                         <h3 className="font-semibold mb-2">Setup Your Tiers</h3>
                         {formData.tiers.map((tier, index) => (
                             <div key={index} className="flex items-center mb-2">
@@ -166,6 +148,19 @@ const FormComponent = () => {
                     </div>
                     <button type="submit" className="w-full bg-black text-white font-semibold py-2 rounded-md">Submit</button>
                 </form>
+                <br />
+                <div className="mb-4">
+                    <h3 className="font-semibold mb-2">Upload Images</h3>
+                    <label htmlFor="images-upload" className="cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Images
+                    </label>
+                    <input id="images-upload" type="file" accept="image/*" multiple onChange={handleImagesChange} className="hidden" />
+                    <button type="button" onClick={uploadImage} className="w-full bg-black text-white font-semibold py-2 rounded-md">Upload Image</button>
+
+                </div>
             </div></>
 
     );
